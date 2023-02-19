@@ -23,3 +23,8 @@
     ```
 - call `tud_task()` in each loop iteration in `main` function.
 - add your own `tusb_config.h` and `usb_description.c` to your project
+
+## Changes for freeRTOS
+- enable freeRTOS in `STM32CubeMX`
+- add task for `tinyUSB`
+- define `CFG_TUSB_OS` as `OPT_OS_FREERTOS` in `tusb_config.h`
