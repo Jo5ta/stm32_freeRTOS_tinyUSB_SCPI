@@ -31,6 +31,8 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "tusb_config.h"
+#include "tusb.h"
 
 /* USER CODE END Includes */
 

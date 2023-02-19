@@ -22,6 +22,11 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
 
 /* USER CODE END Includes */
 
@@ -76,6 +81,8 @@ static void MX_ETH_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
 /* USER CODE BEGIN PFP */
+static void cdc_task(void);
+int __io_putchar(int ch);
 
 /* USER CODE END PFP */
 
@@ -116,6 +123,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
   /* USER CODE BEGIN 2 */
+  tud_init(BOARD_TUD_RHPORT);
 
   /* USER CODE END 2 */
 
@@ -123,6 +131,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	tud_task(); // tinyusb device task
+    cdc_task();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -291,10 +301,10 @@ static void MX_USB_OTG_FS_PCD_Init(void)
   hpcd_USB_OTG_FS.Init.speed = PCD_SPEED_FULL;
   hpcd_USB_OTG_FS.Init.dma_enable = DISABLE;
   hpcd_USB_OTG_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
-  hpcd_USB_OTG_FS.Init.Sof_enable = ENABLE;
+  hpcd_USB_OTG_FS.Init.Sof_enable = DISABLE;
   hpcd_USB_OTG_FS.Init.low_power_enable = DISABLE;
   hpcd_USB_OTG_FS.Init.lpm_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.vbus_sensing_enable = ENABLE;
+  hpcd_USB_OTG_FS.Init.vbus_sensing_enable = DISABLE;
   hpcd_USB_OTG_FS.Init.use_dedicated_ep1 = DISABLE;
   if (HAL_PCD_Init(&hpcd_USB_OTG_FS) != HAL_OK)
   {
@@ -358,6 +368,33 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+int __io_putchar(int ch){
+	HAL_UART_Transmit(&huart3, (uint8_t *)&ch, 1, 0xFFFF);
+	return ch;
+}
+
+static void echo_serial_port(uint8_t itf, uint8_t buf[], uint32_t count)
+{
+  tud_cdc_n_write(0, buf, count);
+  tud_cdc_n_write_flush(0);
+}
+
+//--------------------------------------------------------------------+
+// USB CDC
+//--------------------------------------------------------------------+
+static void cdc_task(void)
+{
+  if ( tud_cdc_n_available(0) )
+  {
+	uint8_t buf[64];
+
+	uint32_t count = tud_cdc_n_read(0, buf, sizeof(buf));
+
+	// echo back to both serial ports
+	echo_serial_port(0, buf, count);
+  }
+}
 
 /* USER CODE END 4 */
 
