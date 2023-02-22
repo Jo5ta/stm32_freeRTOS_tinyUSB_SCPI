@@ -1,3 +1,6 @@
 [submodule "extern_libraries/tinyusb"]
 	path = extern_libraries/tinyusb
 	url = https://github.com/hathach/tinyusb.git
+[submodule "extern_libraries/scpi"]
+	path = extern_libraries/scpi
+	url = https://github.com/j123b567/scpi-parser.git
