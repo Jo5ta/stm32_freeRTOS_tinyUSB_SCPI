@@ -23,11 +23,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-
 
 /* USER CODE END Includes */
 
@@ -96,6 +91,18 @@ const osThreadAttr_t tinyUSB_attributes = {
   .stack_size = sizeof(tinyUSBBuffer),
   .priority = (osPriority_t) osPriorityRealtime4,
 };
+/* Definitions for usb_cdc_scpi */
+osThreadId_t usb_cdc_scpiHandle;
+uint32_t usb_cdcBuffer[ 2048 ];
+osStaticThreadDef_t usb_cdcControlBlock;
+const osThreadAttr_t usb_cdc_scpi_attributes = {
+  .name = "usb_cdc_scpi",
+  .cb_mem = &usb_cdcControlBlock,
+  .cb_size = sizeof(usb_cdcControlBlock),
+  .stack_mem = &usb_cdcBuffer[0],
+  .stack_size = sizeof(usb_cdcBuffer),
+  .priority = (osPriority_t) osPriorityNormal,
+};
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -107,16 +114,17 @@ static void MX_ETH_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
 void StartDefaultTask(void *argument);
-void tinyUSB_task(void *argument);
+extern void tinyUSB_task(void *argument);
+extern void usb_cdc_scpi_task(void *argument);
 
 /* USER CODE BEGIN PFP */
-static void cdc_task(void);
 int __io_putchar(int ch);
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
 
 /* USER CODE END 0 */
 
@@ -180,6 +188,9 @@ int main(void)
 
   /* creation of tinyUSB */
   tinyUSBHandle = osThreadNew(tinyUSB_task, NULL, &tinyUSB_attributes);
+
+  /* creation of usb_cdc_scpi */
+  usb_cdc_scpiHandle = osThreadNew(usb_cdc_scpi_task, NULL, &usb_cdc_scpi_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -438,28 +449,6 @@ int __io_putchar(int ch){
 	return ch;
 }
 
-static void echo_serial_port(uint8_t itf, uint8_t buf[], uint32_t count)
-{
-  tud_cdc_n_write(0, buf, count);
-  tud_cdc_n_write_flush(0);
-}
-
-//--------------------------------------------------------------------+
-// USB CDC
-//--------------------------------------------------------------------+
-static void cdc_task(void)
-{
-  if ( tud_cdc_n_available(0) )
-  {
-	uint8_t buf[64];
-
-	uint32_t count = tud_cdc_n_read(0, buf, sizeof(buf));
-
-	// echo back to both serial ports
-	echo_serial_port(0, buf, count);
-  }
-}
-
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -475,31 +464,9 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	cdc_task();
     osDelay(1);
   }
   /* USER CODE END 5 */
-}
-
-/* USER CODE BEGIN Header_tinyUSB_task */
-/**
-* @brief Function implementing the tinyUSB thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_tinyUSB_task */
-void tinyUSB_task(void *argument)
-{
-  /* USER CODE BEGIN tinyUSB_task */
-  tud_init(BOARD_TUD_RHPORT);
-  /* Infinite loop */
-  for(;;)
-  {
-	tud_task();
-    tud_cdc_write_flush();
-
-  }
-  /* USER CODE END tinyUSB_task */
 }
 
 /**
